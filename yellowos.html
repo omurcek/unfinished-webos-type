@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yellow OS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #FFD700;
+            --glass-blur: 15px;
+            --glass-opacity: rgba(255, 255, 255, 0.12);
+            --bg-url: url('https://images.unsplash.com/photo-1477346611705-65d1883cee1e?q=80&w=2070');
+            --text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+        }
+        * { box-sizing: border-box; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+        body, html { margin:0; padding:0; height:100%; font-family:'Segoe UI',sans-serif; background:#000; overflow:hidden; }
+        #desktop {
+            background: var(--bg-url) center/cover no-repeat fixed;
+            height:100vh; width:100vw;
+            padding:40px; position:relative;
+            user-select:none;
+        }
+        .glass {
+            background:var(--glass-opacity);
+            backdrop-filter:blur(var(--glass-blur)) saturate(180%);
+            -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(180%);
+            border:1px solid rgba(255,255,255,0.25);
+            box-shadow:0 12px 40px rgba(0,0,0,0.4);
+            border-radius:16px;
+        }
+        .icon-grid { display:grid; grid-template-columns:repeat(auto-fill,90px); gap:20px; }
+        .icon {
+            width:90px; padding:8px; display:flex; flex-direction:column; align-items:center;
+            cursor:pointer; border-radius:12px; color:white;
+        }
+        .icon:hover { background:rgba(255,255,255,0.15); transform:scale(1.08); }
+        .icon i { font-size:48px; margin-bottom:6px; filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5)); }
+        .icon span { font-size:11px; font-weight:500; text-shadow:var(--text-shadow); text-align:center; word-break:break-all; }
+        .window {
+            position:absolute; min-width:420px; min-height:320px; border-radius:16px; overflow:hidden;
+            z-index:10; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.5);
+            animation:openWin 0.4s ease;
+        }
+        @keyframes openWin { from { opacity:0; transform:scale(0.85) translateY(30px); } to { opacity:1; transform:none; } }
+        .win-header {
+            height:42px; background:rgba(255,255,255,0.18); display:flex; justify-content:space-between; align-items:center;
+            padding:0 16px; cursor:move; font-weight:600; color:white;
+        }
+        .win-body { flex:1; background:rgba(15,15,25,0.92); color:white; overflow:hidden; }
+        .win-btn { width:13px; height:13px; border-radius:50%; cursor:pointer; }
+        .taskbar {
+            position:fixed; bottom:0; left:0; right:0; height:60px; display:flex; align-items:center;
+            padding:0 20px; z-index:1000; background:rgba(0,0,0,0.65); backdrop-filter:blur(35px);
+            border-top:1px solid rgba(255,255,255,0.12);
+        }
+        .start-btn { font-size:32px; color:var(--primary); cursor:pointer; margin-right:20px; transition:0.4s; }
+        .start-btn:hover { transform:rotate(180deg) scale(1.15); }
+        #start-menu {
+            position:fixed; bottom:70px; left:20px; width:340px; height:520px; padding:30px;
+            display:none; flex-direction:column; z-index:1001;
+        }
+        #start-menu.active { display:flex; animation:slideUp 0.35s ease; }
+        .context-menu {
+            position:absolute; background:rgba(30,30,40,0.95); backdrop-filter:blur(12px);
+            border:1px solid rgba(255,255,255,0.2); border-radius:10px; padding:8px 0;
+            min-width:180px; z-index:9999; box-shadow:0 10px 30px rgba(0,0,0,0.6);
+            display:none;
+        }
+        .context-item { padding:10px 18px; color:white; cursor:pointer; font-size:13px; }
+        .context-item:hover { background:rgba(255,255,255,0.15); }
+        .task-item { width:48px; height:48px; display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; }
+        .task-item.active::after { content:''; position:absolute; bottom:4px; width:6px; height:6px; background:var(--primary); border-radius:50%; }
+        .widget { position:absolute; right:40px; top:30px; text-align:right; color:white; pointer-events:none; }
+        #big-clock { font-size:72px; font-weight:300; letter-spacing:-2px; text-shadow:var(--text-shadow); }
+        #big-date { font-size:20px; opacity:0.85; margin-top:8px; text-shadow:var(--text-shadow); }
+        @keyframes slideUp { from { transform:translateY(40px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+
+        /* Dosya Gezgini */
+        .file-controls { padding:10px; background:rgba(255,255,255,0.05); display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+        .file-controls button { background:rgba(255,255,255,0.15); border:none; color:white; padding:8px 14px; border-radius:8px; cursor:pointer; }
+        .file-controls button:hover { background:rgba(255,255,255,0.25); }
+        #file-list { overflow:auto; padding:10px; }
+        .file-item {
+            display:flex; align-items:center; padding:8px 50px 8px 8px; cursor:pointer; border-radius:6px;
+            position:relative; margin-bottom:2px;
+        }
+        .file-item:hover { background:rgba(255,255,255,0.1); }
+        .file-item i { font-size:20px; margin-right:12px; min-width:24px; }
+        .delete-btn {
+            position:absolute; right:12px; top:50%; transform:translateY(-50%);
+            background:none; border:none; color:#ff6b6b; cursor:pointer; opacity:0;
+            transition:opacity 0.2s, color 0.2s, transform 0.2s; font-size:16px;
+        }
+        .file-item:hover .delete-btn { opacity:1; }
+        .delete-btn:hover { color:#ff0000; transform:translateY(-50%) scale(1.2); }
+        #preview { padding:20px; overflow:auto; }
+        #preview img { max-width:100%; border-radius:8px; }
+        #preview pre { white-space:pre-wrap; font-family:consolas; background:rgba(0,0,0,0.3); padding:15px; border-radius:8px; }
+    </style>
+</head>
+<body>
+    <div id="desktop" oncontextmenu="showContext(event, 'desktop')">
+        <div class="icon-grid">
+            <div class="icon" onclick="openApp('youtube')" oncontextmenu="showContext(event, 'icon', 'YouTube')"><i class="fab fa-youtube" style="color:#ff0000;"></i><span>YouTube</span></div>
+            <div class="icon" onclick="openApp('google')" oncontextmenu="showContext(event, 'icon', 'Google')"><i class="fab fa-google" style="color:#4285f4;"></i><span>Google</span></div>
+            <div class="icon" onclick="openApp('notepad')"><i class="fas fa-sticky-note" style="color:#f39c12;"></i><span>Not Defteri</span></div>
+            <div class="icon" onclick="openApp('terminal')"><i class="fas fa-terminal" style="color:#2ecc71;"></i><span>Terminal</span></div>
+            <div class="icon" onclick="openApp('camera')"><i class="fas fa-camera" style="color:#e74c3c;"></i><span>Kamera</span></div>
+            <div class="icon" onclick="openApp('files')"><i class="fas fa-folder-open" style="color:#f1c40f;"></i><span>Dosya Gezgini</span></div>
+            <div class="icon" onclick="openApp('settings')"><i class="fas fa-sliders-h" style="color:var(--primary);"></i><span>Ayarlar</span></div>
+        </div>
+        <div class="widget">
+            <div id="big-clock">00:00</div>
+            <div id="big-date">30 Ocak 2026</div>
+            <div id="weather" style="margin-top:15px; font-size:16px;">Hava: 18°C - Güneşli ☀️</div>
+        </div>
+        <div id="start-menu" class="glass">
+            <h3 style="color:var(--primary); margin:0 0 25px 0;">YellowOS Crystal v11.2</h3>
+            <div style="flex:1; overflow-y:auto;">
+                <div class="icon" style="flex-direction:row; width:100%; gap:20px;" onclick="openApp('settings')"><i class="fas fa-cog" style="font-size:22px;"></i> Ayarlar</div>
+                <div class="icon" style="flex-direction:row; width:100%; gap:20px;" onclick="openApp('terminal')"><i class="fas fa-terminal" style="font-size:22px;"></i> Terminal</div>
+                <div class="icon" style="flex-direction:row; width:100%; gap:20px;" onclick="openApp('files')"><i class="fas fa-folder-open" style="font-size:22px;"></i> Dosya Gezgini</div>
+                <hr style="opacity:0.15; margin:15px 0;">
+                <div class="icon" style="flex-direction:row; width:100%; gap:20px;" onclick="location.reload()"><i class="fas fa-power-off" style="font-size:22px; color:#ff5f56;"></i> Kapat / Yeniden Başlat</div>
+            </div>
+            <div style="text-align:center; font-size:12px; opacity:0.6; margin-top:20px;">YellowOS © 2026</div>
+        </div>
+        <div class="taskbar">
+            <div class="start-btn" onclick="toggleStart()"><i class="fas fa-circle-notch"></i></div>
+            <div id="task-items" style="flex:1; display:flex; gap:8px;"></div>
+            <div style="color:white; font-size:15px; font-weight:600; margin-left:15px;" id="mini-clock">00:00</div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="contextMenu" class="context-menu">
+        <div class="context-item" onclick="alert('Yeni Klasör oluşturuldu (simülasyon)')">Yeni Klasör</div>
+        <div class="context-item" onclick="location.reload()">Yenile</div>
+        <div class="context-item" onclick="openApp('settings')">Görünüm Ayarları</div>
+        <div class="context-item" onclick="alert('Kişiselleştirme → YellowOS Özellikleri')">Özellikler</div>
+    </div>
+
+    <script>
+        let zIndex = 100;
+        let windows = {};
+        let taskbarItems = {};
+        let dirStack = [];
+
+        function updateTime() {
+            const now = new Date();
+            const time = now.toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+            document.getElementById('big-clock').innerText = time.slice(0,5);
+            document.getElementById('mini-clock').innerText = time.slice(0,5);
+            document.getElementById('big-date').innerText = now.toLocaleDateString('tr-TR', {day:'numeric', month:'long', year:'numeric'});
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        function toggleStart() {
+            document.getElementById('start-menu').classList.toggle('active');
+        }
+
+        function showContext(e, type, extra='') {
+            e.preventDefault();
+            const menu = document.getElementById('contextMenu');
+            menu.style.left = e.clientX + 'px';
+            menu.style.top = e.clientY + 'px';
+            menu.style.display = 'block';
+            document.onclick = () => { menu.style.display = 'none'; };
+        }
+
+        function openApp(id) {
+            if (document.getElementById(`win-${id}`)) {
+                focusWin(`win-${id}`);
+                return;
+            }
+            const win = document.createElement('div');
+            win.id = `win-${id}`;
+            win.className = 'window glass';
+            win.style.width = id === 'files' ? '950px' : '820px';
+            win.style.height = id === 'files' ? '620px' : '520px';
+            win.style.left = Math.random()*300 + 100 + 'px';
+            win.style.top = Math.random()*200 + 80 + 'px';
+            win.style.zIndex = ++zIndex;
+            const titles = {
+                youtube: 'YouTube', google: 'Google', settings: 'Ayarlar',
+                notepad: 'Not Defteri', terminal: 'Terminal', camera: 'Kamera',
+                files: 'Dosya Gezgini'
+            };
+            win.innerHTML = `
+                <div class="win-header" onmousedown="dragStart(event, this.parentElement)">
+                    <span>${titles[id] || id}</span>
+                    <div style="display:flex; gap:10px;">
+                        <div class="win-btn" style="background:#fdbc40;" onclick="minimizeWin('${win.id}')"></div>
+                        <div class="win-btn" style="background:#27c93f;" onclick="toggleMaximize('${win.id}')"></div>
+                        <div class="win-btn" style="background:#ff5f56;" onclick="closeWin('${win.id}')"></div>
+                    </div>
+                </div>
+                <div class="win-body" id="body-${id}"></div>
+            `;
+            document.getElementById('desktop').appendChild(win);
+            loadAppContent(id);
+            addToTaskbar(id, titles[id] || id);
+            document.getElementById('start-menu').classList.remove('active');
+        }
+
+        async function loadAppContent(id) {
+            const body = document.getElementById(`body-${id}`);
+            if(id === 'youtube') {
+                body.innerHTML = `<iframe src="https://www.youtube.com/embed/jfKfPfyJRdk" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
+            } else if(id === 'google') {
+                body.innerHTML = `<iframe src="https://www.google.com/search?igu=1" style="width:100%;height:100%;border:none;background:white;"></iframe>`;
+            } else if(id === 'settings') {
+                body.innerHTML = `
+                    <div style="padding:30px;">
+                        <h3>Ayarlar</h3>
+                        <div class="setting-item">
+                            <label>Masaüstü Arkaplan URL</label>
+                            <input type="text" id="bg-input" placeholder="https://..." onchange="updateBG(this.value)">
+                        </div>
+                        <div class="setting-item">
+                            <label>Blur Seviyesi: <span id="blur-val">15</span>px</label>
+                            <input type="range" min="0" max="60" value="15" oninput="updateBlur(this.value)">
+                        </div>
+                        <div class="setting-item">
+                            <label>Vurgu Rengi</label>
+                            <div class="color-presets" style="display:flex;gap:12px;margin-top:12px;">
+                                <div class="color-dot" style="background:#FFD700;width:32px;height:32px;border-radius:50%;cursor:pointer;border:3px solid white;" onclick="updateAccent('#FFD700')"></div>
+                                <div class="color-dot" style="background:#00d2ff" onclick="updateAccent('#00d2ff')"></div>
+                                <div class="color-dot" style="background:#ff4757" onclick="updateAccent('#ff4757')"></div>
+                                <div class="color-dot" style="background:#9b59b6" onclick="updateAccent('#9b59b6')"></div>
+                            </div>
+                        </div>
+                    </div>`;
+            } else if(id === 'notepad') {
+                body.innerHTML = `<textarea style="width:100%;height:100%;background:transparent;color:white;border:none;resize:none;font-family:consolas;padding:20px;font-size:15px;" placeholder="Buraya yaz..."></textarea>`;
+            } else if(id === 'terminal') {
+                body.innerHTML = `<pre id="term-output" style="padding:20px;color:#0f0;font-family:consolas;font-size:14px;height:100%;overflow:auto;background:#000;"></pre>
+                    <input id="term-input" style="width:100%;background:#111;color:#0f0;border:none;padding:10px;font-family:consolas;" placeholder="Komut gir...">`;
+                setTimeout(() => {
+                    const input = document.getElementById('term-input');
+                    input.focus();
+                    input.onkeydown = e => { if(e.key==='Enter') { execTerm(input.value); input.value=''; } };
+                }, 100);
+            } else if(id === 'camera') {
+                body.innerHTML = `<video id="cam-video" autoplay style="width:100%;height:100%;object-fit:cover;"></video>`;
+                navigator.mediaDevices.getUserMedia({video:true}).then(stream => {
+                    document.getElementById('cam-video').srcObject = stream;
+                }).catch(err => body.innerHTML = `<p style="padding:30px;color:#ff6b6b;">Kamera erişimi reddedildi veya yok.</p>`);
+            } else if(id === 'files') {
+                if (!('showDirectoryPicker' in window)) {
+                    body.innerHTML = `<p style="padding:40px; text-align:center; color:#ffcc00;">Tarayıcınız Dosya Sistemi Erişim API'sini desteklemiyor.<br>Lütfen güncel Chrome/Edge kullanın ve HTTPS/localhost üzerinden açın.</p>`;
+                    return;
+                }
+                body.innerHTML = `
+                    <div class="file-controls">
+                        <button onclick="openFolder()"><i class="fas fa-folder-open"></i> Klasör Aç</button>
+                        <button id="back-btn" style="display:none;" onclick="goBack()"><i class="fas fa-arrow-left"></i> Geri</button>
+                        <button onclick="createNewFile()"><i class="fas fa-file-plus"></i> Yeni Dosya</button>
+                        <button onclick="createNewFolder()"><i class="fas fa-folder-plus"></i> Yeni Klasör</button>
+                        <button onclick="loadFiles()"><i class="fas fa-sync"></i> Yenile</button>
+                        <span id="current-path" style="margin-left:auto; font-weight:600; opacity:0.9;">Seçili Klasör Yok</span>
+                    </div>
+                    <div style="display:flex; height:calc(100% - 50px);">
+                        <div id="file-list" style="width:35%; border-right:1px solid rgba(255,255,255,0.1);"></div>
+                        <div id="preview" style="flex:1;">Bir dosya veya klasör seçin...</div>
+                    </div>`;
+            }
+        }
+
+        async function openFolder() {
+            try {
+                const dirHandle = await window.showDirectoryPicker();
+                dirStack = [{ handle: dirHandle, name: dirHandle.name }];
+                await loadFiles();
+            } catch (e) {
+                alert('Klasör seçimi iptal edildi veya hata: ' + e.message);
+            }
+        }
+
+        async function loadFiles() {
+            const currentHandle = dirStack[dirStack.length - 1]?.handle;
+            if (!currentHandle) return;
+
+            document.getElementById('current-path').innerText = dirStack.map(d => d.name).join(' / ');
+            document.getElementById('back-btn').style.display = dirStack.length > 1 ? 'inline-flex' : 'none';
+
+            const list = document.getElementById('file-list');
+            list.innerHTML = '';
+
+            try {
+                for await (const entry of currentHandle.values()) {
+                    const item = document.createElement('div');
+                    item.className = 'file-item';
+                    const icon = entry.kind === 'directory' ? 'fa-folder' : 'fa-file';
+                    item.innerHTML = `<i class="fas ${icon}"></i><span>${entry.name}</span>`;
+
+                    // Silme butonu
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'delete-btn';
+                    delBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                    const name = entry.name;
+                    const kind = entry.kind;
+                    const handle = entry;
+                    delBtn.onclick = async (e) => {
+                        e.stopPropagation();
+                        if (!confirm(`"${name}" ${kind === 'directory' ? 'klasörünü' : 'dosyasını'} silmek istiyor musunuz?\nBu işlem geri alınamaz!`)) return;
+                        try {
+                            if (kind === 'directory') {
+                                await handle.remove({ recursive: true });
+                            } else {
+                                await handle.remove();
+                            }
+                            await loadFiles();
+                        } catch (err) {
+                            alert('Silme hatası: ' + err.message);
+                        }
+                    };
+                    item.appendChild(delBtn);
+
+                    // Tıklama (klasör gir / dosya önizle)
+                    if (entry.kind === 'directory') {
+                        item.onclick = async () => {
+                            dirStack.push({ handle: entry, name: entry.name });
+                            await loadFiles();
+                        };
+                    } else {
+                        item.onclick = async () => {
+                            try {
+                                const file = await entry.getFile();
+                                const preview = document.getElementById('preview');
+                                preview.innerHTML = `<h4>${file.name} (${(file.size / 1024).toFixed(2)} KB)</h4>`;
+                                
+                                if (file.type.startsWith('image/')) {
+                                    const img = document.createElement('img');
+                                    img.src = URL.createObjectURL(file);
+                                    preview.appendChild(img);
+                                } else if (file.type.startsWith('text/') || !file.type) {
+                                    const text = await file.text();
+                                    const pre = document.createElement('pre');
+                                    pre.textContent = text;
+                                    preview.appendChild(pre);
+                                } else {
+                                    const a = document.createElement('a');
+                                    a.href = URL.createObjectURL(file);
+                                    a.download = file.name;
+                                    a.textContent = 'Dosyayı İndir';
+                                    a.style.color = 'var(--primary)';
+                                    preview.appendChild(a);
+                                }
+                            } catch (err) {
+                                document.getElementById('preview').innerHTML = 'Dosya okunamadı: ' + err.message;
+                            }
+                        };
+                    }
+                    list.appendChild(item);
+                }
+            } catch (e) {
+                list.innerHTML = '<p style="color:#ff6b6b;">Klasör okunamadı: ' + e.message + '</p>';
+            }
+        }
+
+        function goBack() {
+            if (dirStack.length > 1) {
+                dirStack.pop();
+                loadFiles();
+            }
+        }
+
+        async function createNewFile() {
+            const currentHandle = dirStack[dirStack.length - 1]?.handle;
+            if (!currentHandle) return alert('Önce bir klasör açın!');
+            const name = prompt('Yeni dosya adı (örn: not.txt):');
+            if (!name) return;
+            try {
+                const fh = await currentHandle.getFileHandle(name, { create: true });
+                const writable = await fh.createWritable();
+                await writable.write('Yeni dosya içeriği. YellowOS ile düzenleyebilirsiniz!');
+                await writable.close();
+                await loadFiles();
+                alert('Dosya oluşturuldu: ' + name);
+            } catch (e) {
+                alert('Hata: ' + e.message);
+            }
+        }
+
+        async function createNewFolder() {
+            const currentHandle = dirStack[dirStack.length - 1]?.handle;
+            if (!currentHandle) return alert('Önce bir klasör açın!');
+            const name = prompt('Yeni klasör adı:');
+            if (!name) return;
+            try {
+                await currentHandle.getDirectoryHandle(name, { create: true });
+                await loadFiles();
+                alert('Klasör oluşturuldu: ' + name);
+            } catch (e) {
+                alert('Hata: ' + e.message);
+            }
+        }
+
+        // ... (terminal, updateBG, updateBlur, updateAccent, dragStart, focusWin, closeWin, minimizeWin, toggleMaximize, addToTaskbar fonksiyonları aynı kalıyor)
+
+        function execTerm(cmd) {
+            const out = document.getElementById('term-output');
+            let res = '> ' + cmd + '<br>';
+            if(cmd==='ls') res += 'DersNotu.pdf  Resim.jpg  secret.txt<br>';
+            else if(cmd==='clear') res = '';
+            else if(cmd.startsWith('echo ')) res += cmd.slice(5) + '<br>';
+            else res += 'Komut tanınmadı: ' + cmd + '<br>';
+            out.innerHTML += res;
+            out.scrollTop = out.scrollHeight;
+        }
+
+        function updateBG(url) { if(url) document.documentElement.style.setProperty('--bg-url', `url('${url}')`); }
+        function updateBlur(v) {
+            document.documentElement.style.setProperty('--glass-blur', v + 'px');
+            document.getElementById('blur-val').innerText = v;
+        }
+        function updateAccent(c) {
+            document.documentElement.style.setProperty('--primary', c);
+        }
+
+        function dragStart(e, el) {
+            if(e.target.classList.contains('win-btn')) return;
+            focusWin(el.id);
+            let ox = e.clientX - el.offsetLeft;
+            let oy = e.clientY - el.offsetTop;
+            document.onmousemove = ev => {
+                el.style.left = (ev.clientX - ox) + 'px';
+                el.style.top = (ev.clientY - oy) + 'px';
+            };
+            document.onmouseup = () => document.onmousemove = null;
+        }
+
+        function focusWin(id) {
+            document.getElementById(id).style.zIndex = ++zIndex;
+            document.querySelectorAll('.task-item').forEach(t => t.classList.remove('active'));
+            if(taskbarItems[id]) taskbarItems[id].classList.add('active');
+        }
+
+        function closeWin(id) {
+            const win = document.getElementById(id);
+            win.style.animation = 'closeWin 0.3s ease forwards';
+            setTimeout(() => {
+                win.remove();
+                if(taskbarItems[id]) taskbarItems[id].remove();
+                delete taskbarItems[id];
+                if (id === 'files') dirStack = [];
+            }, 300);
+        }
+
+        function minimizeWin(id) {
+            document.getElementById(id).style.display = 'none';
+            if(taskbarItems[id]) taskbarItems[id].classList.remove('active');
+        }
+
+        function toggleMaximize(id) {
+            const win = document.getElementById(id);
+            if(win.classList.toggle('maximized')) {
+                win.dataset.origLeft = win.style.left;
+                win.dataset.origTop = win.style.top;
+                win.dataset.origW = win.style.width;
+                win.dataset.origH = win.style.height;
+                win.style.left = '0'; win.style.top = '0';
+                win.style.width = '100%'; win.style.height = 'calc(100% - 60px)';
+            } else {
+                win.style.left = win.dataset.origLeft || '150px';
+                win.style.top = win.dataset.origTop || '100px';
+                win.style.width = win.dataset.origW || '800px';
+                win.style.height = win.dataset.origH || '500px';
+            }
+        }
+
+        function addToTaskbar(id, title) {
+            const bar = document.getElementById('task-items');
+            const item = document.createElement('div');
+            item.className = 'task-item';
+            item.innerHTML = `<i class="fas fa-window-maximize"></i>`;
+            item.title = title;
+            item.onclick = () => {
+                const win = document.getElementById(`win-${id}`);
+                if(win) {
+                    win.style.display = 'flex';
+                    focusWin(`win-${id}`);
+                }
+            };
+            bar.appendChild(item);
+            taskbarItems[id] = item;
+        }
+
+        document.addEventListener('click', e => {
+            if(!e.target.closest('.context-menu')) {
+                document.getElementById('contextMenu').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
