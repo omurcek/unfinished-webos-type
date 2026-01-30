@@ -1,15 +1,5 @@
 # Unfinished webos type
 
-A terminal-based toolset crafted by **Omurcek**, primarily focused on Discord utilities.
-
-## 📦 Features
-
-Lapidary Terminal includes 4 main tools:
-
-- 🔗 **Webhook Utilities** – Manage, spam, or test Discord webhooks.
-- 🎁 **Discord Nitro Generator** – Simulate Nitro code generation (for educational purposes).
-- ☢️ **Discord Server Nuker** – Experimental tools for server nuking (use responsibly or only in test environments).
-- 🌐 **IP Tools** – Basic IP utilities bundled in the terminal.
 
 ---
 
