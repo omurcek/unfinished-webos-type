@@ -1,4 +1,4 @@
-# 💎 Lapidary Terminal
+# Unfinished webos type
 
 A terminal-based toolset crafted by **Omurcek**, primarily focused on Discord utilities.
 
